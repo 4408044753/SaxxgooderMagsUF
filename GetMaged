@@ -1,0 +1,266 @@
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "Saxxgooder Script";
+    Text = "Script executed successfully!";
+    Duration = 5;
+})
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- General Configurations
+getgenv().AutoMagBall = true
+local pullDistance = 1000
+local pullStrength = 100000
+local teleportDistance = 15
+local magDistance = 50
+local magnetStrength = 10000
+local enlargedHitboxSize = Vector3.new(2500, 2500, 2500)
+local teleportSpeed = 0.001
+local catchSpeed = 0.0001
+local hitboxEnabled = true
+local buyerText = "Buyer"
+
+-- Create the Main Window
+local Window = Rayfield:CreateWindow({
+    Name = "Saxxgooder Ultimate Football Script",
+    LoadingTitle = "Initializing...",
+    LoadingSubtitle = "Magnet and Hitbox System",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "SaxxConfigs",
+        FileName = "FootballScript"
+    },
+    KeySystem = false
+})
+
+-- General Tab: Basic Configurations
+local GeneralTab = Window:CreateTab("General", 4483362458)
+
+GeneralTab:CreateToggle({
+    Name = "Enable Auto Magnet",
+    CurrentValue = getgenv().AutoMagBall,
+    Flag = "AutoMagBall",
+    Callback = function(state)
+        getgenv().AutoMagBall = state
+    end
+})
+
+GeneralTab:CreateSlider({
+    Name = "Mag Distance",
+    Range = {10, 200},
+    Increment = 5,
+    CurrentValue = magDistance,
+    Flag = "MagDistance",
+    Callback = function(value)
+        magDistance = value
+    end
+})
+
+GeneralTab:CreateSlider({
+    Name = "Pull Distance",
+    Range = {50, 2000},
+    Increment = 50,
+    CurrentValue = pullDistance,
+    Flag = "PullDistance",
+    Callback = function(value)
+        pullDistance = value
+    end
+})
+
+GeneralTab:CreateToggle({
+    Name = "Enable Enlarged Hitbox",
+    CurrentValue = hitboxEnabled,
+    Flag = "HitboxEnabled",
+    Callback = function(state)
+        hitboxEnabled = state
+        if hitboxEnabled then
+            enlargeHitbox()
+        else
+            removeHitbox()
+        end
+    end
+})
+
+-- Advanced Tab: High-Level Configurations
+local AdvancedTab = Window:CreateTab("Advanced", 4483362458)
+
+AdvancedTab:CreateSlider({
+    Name = "Pull Strength",
+    Range = {1000, 200000},
+    Increment = 5000,
+    CurrentValue = pullStrength,
+    Flag = "PullStrength",
+    Callback = function(value)
+        pullStrength = value
+    end
+})
+
+AdvancedTab:CreateSlider({
+    Name = "Teleport Distance",
+    Range = {5, 50},
+    Increment = 1,
+    CurrentValue = teleportDistance,
+    Flag = "TeleportDistance",
+    Callback = function(value)
+        teleportDistance = value
+    end
+})
+
+AdvancedTab:CreateSlider({
+    Name = "Magnet Strength",
+    Range = {1000, 50000},
+    Increment = 5000,
+    CurrentValue = magnetStrength,
+    Flag = "MagnetStrength",
+    Callback = function(value)
+        magnetStrength = value
+    end
+})
+
+AdvancedTab:CreateSlider({
+    Name = "Teleport Speed",
+    Range = {0.01, 1},
+    Increment = 0.01,
+    CurrentValue = teleportSpeed,
+    Flag = "TeleportSpeed",
+    Callback = function(value)
+        teleportSpeed = value
+    end
+})
+
+AdvancedTab:CreateSlider({
+    Name = "Catch Speed",
+    Range = {0.01, 1},
+    Increment = 0.01,
+    CurrentValue = catchSpeed,
+    Flag = "CatchSpeed",
+    Callback = function(value)
+        catchSpeed = value
+    end
+})
+
+-- Appearance Tab: Customization Options
+local AppearanceTab = Window:CreateTab("Appearance", 4483362458)
+
+AppearanceTab:CreateInput({
+    Name = "Buyer Text",
+    PlaceholderText = "Enter text to display above your character",
+    RemoveTextAfterFocusLost = false,
+    CurrentValue = buyerText,
+    Callback = function(text)
+        buyerText = text
+        updateBuyerText()
+    end
+})
+
+-- Functions
+local function findBall()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name:lower():find("ball") then
+            return part
+        end
+    end
+    return nil
+end
+
+local function enlargeHitbox()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            local hitboxPart = Instance.new("Part")
+            hitboxPart.Name = "EnlargedHitbox"
+            hitboxPart.Size = enlargedHitboxSize
+            hitboxPart.Position = humanoidRootPart.Position
+            hitboxPart.Anchored = true
+            hitboxPart.CanCollide = false
+            hitboxPart.Transparency = 0.7
+            hitboxPart.Parent = workspace
+            hitboxPart.CFrame = humanoidRootPart.CFrame
+        end
+    end
+end
+
+local function removeHitbox()
+    for _, part in ipairs(workspace:GetChildren()) do
+        if part:IsA("Part") and part.Name == "EnlargedHitbox" then
+            part:Destroy()
+        end
+    end
+end
+
+local function updateBuyerText()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    for _, child in ipairs(humanoidRootPart:GetChildren()) do
+        if child:IsA("BillboardGui") and child.Name == "BuyerText" then
+            child:Destroy()
+        end
+    end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "BuyerText"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = humanoidRootPart
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = buyerText
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Parent = billboard
+end
+
+local function applyMagnetEffect(ball, humanoidRootPart)
+    local distance = (ball.Position - humanoidRootPart.Position).Magnitude
+    if distance < magDistance then
+        local pullVector = (humanoidRootPart.Position - ball.Position).unit * magnetStrength
+        ball.Velocity = pullVector
+    end
+end
+
+local function teleportToBall(humanoidRootPart, ball)
+    humanoidRootPart.CFrame = CFrame.new(ball.Position)
+end
+
+local function autoCatchBall(humanoidRootPart, ball)
+    local distance = (ball.Position - humanoidRootPart.Position).Magnitude
+    if distance < magDistance then
+        ball.CFrame = humanoidRootPart.CFrame
+    end
+end
+
+local function pullToBall()
+    while getgenv().AutoMagBall do
+        local ball = findBall()
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if ball and character then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local distance = (ball.Position - humanoidRootPart.Position).Magnitude
+                applyMagnetEffect(ball, humanoidRootPart)
+                if distance < pullDistance then
+                    local pullVector = (humanoidRootPart.Position - ball.Position).unit * pullStrength
+                    ball.Velocity = pullVector
+                    if distance < teleportDistance then
+                        teleportToBall(humanoidRootPart, ball)
+                        autoCatchBall(humanoidRootPart, ball)
+                    end
+                end
+            end
+        end
+        wait(catchSpeed)
+    end
+end
+
+task.spawn(function()
+    updateBuyerText()
+    pullBall()
+end)
